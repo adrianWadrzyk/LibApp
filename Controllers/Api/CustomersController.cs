@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using LibApp.Data;
 using LibApp.Dtos;
+using LibApp.Interfaces;
 using LibApp.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,18 +24,17 @@ namespace LibApp.Controllers.Api
     [ApiController]
     public class CustomersController : ControllerBase
     {
-        public CustomersController(ApplicationDbContext context, IMapper mapper)
+        public CustomersController(ICustomerRepository repository, IMapper mapper)
         {
-            _context = context;
-            _mapper = mapper;
+            this.repository = repository;
+           _mapper = mapper;
         }
 
         // GET /api/customers
         [HttpGet]
         public IActionResult GetCustomers()
         {
-            var customers = _context.Customers
-                                        .Include(c => c.MembershipType)
+            var customers = repository.GetCustomers()
                                         .ToList()
                                         .Select(_mapper.Map<Customer, CustomerDto>);
             return Ok(customers);
@@ -42,10 +42,10 @@ namespace LibApp.Controllers.Api
 
         // GET /api/customers/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetCustomer(int id)
+        public async Task<IActionResult> GetCustomer(string id)
         {
             Console.WriteLine("START REQUEST");
-            var customer = await _context.Customers.SingleOrDefaultAsync(c => c.Id == id);
+            var customer = repository.GetCustomerById(id);
             await Task.Delay(2000);
             if (customer == null)
             {
@@ -58,7 +58,8 @@ namespace LibApp.Controllers.Api
 
         // POST /api/customers
         [HttpPost]
-        public CustomerDto CreateCustomer(CustomerDto customerDto)
+        [Authorize(Roles = "Owner")]
+        public IActionResult CreateCustomer(CustomerDto customerDto)
         {
             if (!ModelState.IsValid)
             {
@@ -66,47 +67,55 @@ namespace LibApp.Controllers.Api
             }
 
             var customer = _mapper.Map<Customer>(customerDto);
-            _context.Customers.Add(customer);
-            _context.SaveChanges();
+            customer.Id = Guid.NewGuid().ToString();
+            repository.AddCustomer(customer);
+            repository.Save();
+
             customerDto.Id = customer.Id;
 
-            return customerDto;
+            return CreatedAtRoute(nameof(GetCustomer), new { id = customerDto.Id }, customerDto);
         }
 
         // PUT /api/customers/{id}
         [HttpPut("{id}")]
-        public void UpdateCustomer(int id, CustomerDto customerDto)
+        [Authorize(Roles = "Owner")]
+        public IActionResult UpdateCustomer(string id, CustomerDto customerDto)
         {
             if (!ModelState.IsValid)
             {
                 throw new HttpResponseException(HttpStatusCode.BadRequest);
             }
 
-            var customerInDb = _context.Customers.SingleOrDefault(c => c.Id == id);
+            var customerInDb = repository.GetCustomerById(id);
             if (customerInDb == null)
             {
                 throw new HttpResponseException(HttpStatusCode.NotFound);
             }
 
             _mapper.Map(customerDto, customerInDb);
-            _context.SaveChanges();
+            repository.UpdateCustomer(customerInDb);
+            repository.Save();
+
+            return Ok(customerInDb);
+
         }
 
         // DELETE /api/customers
         [HttpDelete("{id}")]
-        public void DeleteCustomer(int id)
+        [Authorize(Roles = "Owner")]
+        public void DeleteCustomer(string id)
         {
-            var customerInDb = _context.Customers.SingleOrDefault(c => c.Id == id);
+            var customerInDb = repository.GetCustomerById(id);
             if (customerInDb == null)
             {
                 throw new HttpResponseException(HttpStatusCode.NotFound);
             }
 
-            _context.Customers.Remove(customerInDb);
-            _context.SaveChanges();
+            repository.DeleteCustomer(id);
+            repository.Save();
         }
 
-        private ApplicationDbContext _context;
+        private readonly ICustomerRepository repository;
         private readonly IMapper _mapper;
     }
 }

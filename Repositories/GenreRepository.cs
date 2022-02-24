@@ -20,6 +20,31 @@ namespace LibApp.Repositories
         {
             return _context.Genre;
          }
-        
+
+        public void AddGenre(Genre genre)
+        {
+            _context.Genre.Add(genre);
+        }
+
+        public void DeleteGenre(int genreId)
+        {
+            _context.Genre.Remove(GetGenreById(genreId));
+        }
+
+        public Genre GetGenreById(int genreId)
+        {
+            return _context.Genre.Find(genreId);
+        }
+
+        public void Save()
+        {
+            _context.SaveChanges();
+        }
+
+        public void UpdateGenre(Genre genre)
+        {
+            _context.Genre.Update(genre);
+        }
+
     }
 }

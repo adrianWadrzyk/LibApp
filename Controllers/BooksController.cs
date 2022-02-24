@@ -26,7 +26,6 @@ namespace LibApp.Controllers
             _context = context;
             _bookRepository = bookRepository;
             _genreRepository = genreRepository;
-
         }
 
         public IActionResult Index()
@@ -94,7 +93,7 @@ namespace LibApp.Controllers
 
             try
             {
-                _context.SaveChanges();
+                _bookRepository.Save();
             }
             catch (DbUpdateException e)
             {

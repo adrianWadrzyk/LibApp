@@ -9,10 +9,14 @@ namespace LibApp.ViewModels
 {
     public class CustomerFormViewModel
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         [Required(ErrorMessage = "Please provide customer's name")]
         [StringLength(255)]
         public string Name { get; set; }
+        [Required(ErrorMessage = "Please enter customer's email")]
+        [EmailAddress]
+        public string Email { get; set; }
+
         public bool HasNewsletterSubscribed { get; set; }
         [Display(Name = "Membership Type")]
         [Required(ErrorMessage = "Please provide Membership Type")]
@@ -26,19 +30,20 @@ namespace LibApp.ViewModels
         {
             get
             {
-                return Id != 0 ? "Edit Customer" : "New Customer";
+                return Id != "" ? "Edit Customer" : "New Customer";
             }
         }
 
         public CustomerFormViewModel()
         {
-            Id = 0;
+            Id = "";
         }
 
         public CustomerFormViewModel(Customer customer)
         {
             Id = customer.Id;
             Name = customer.Name;
+            Email = customer.Email;
             MembershipTypeId = customer.MembershipTypeId;
             HasNewsletterSubscribed = customer.HasNewsletterSubscribed;
             Birthdate = customer.Birthdate;
